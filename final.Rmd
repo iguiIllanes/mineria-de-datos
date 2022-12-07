@@ -215,6 +215,7 @@ lillie.test(res)
 
 ```{r}
 plot(density(res))
+curve(dnorm(x, mean(res), sd(res)), add=T, col="red")
 ```
 ```{r}
 ## Calcular el VIF de las variables
@@ -279,6 +280,7 @@ summary(lr2)
 ```{r}
 res2 = residuals(lr2)
 plot(density(res2))
+curve(dnorm(x, 0, sd(res)), add=T, col="red")
 ```
 
 ```{r}
