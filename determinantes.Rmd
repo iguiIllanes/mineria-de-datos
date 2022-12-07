@@ -1,0 +1,45 @@
+---
+title: "Determinantes del embarazo adolescente"
+author: "Ignacio Illanes y Radomir Vladislavic"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## INTRODUCCION
+
+lorem ipsum dolor sit amet
+
+## Slide with Bullets
+
+- Bullet 1
+- Bullet 2
+- Bullet 3
+
+## Slide with R Output
+
+```{r cars, echo = TRUE}
+summary(cars)
+```
+
+## Slide with Plot
+
+```{r pressure}
+plot(pressure)
+```
+
+## Tit
+### subtiu
+```{r echo=T}
+library(haven)
+library(readr)
+load(url("https://github.com/AlvaroLimber/MD_UCB/raw/main/eh21.RData"))
+df = eh21p
+df
+getwd()
+write_csv(x=df, file="eh2021p.csv")
+```
+
