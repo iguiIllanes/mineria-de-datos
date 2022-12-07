@@ -1,0 +1,303 @@
+---
+title: "Determinantes del embarazo adolescente"
+author: "Ignacio Illanes y Radomir Vladislavic"
+date: "`r Sys.Date()`"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## INTRODUCCION
+
+lorem ipsum dolor sit amet
+
+## Slide with Bullets
+
+- Bullet 1
+- Bullet 2
+- Bullet 3
+
+## Slide with R Output
+
+```{r cars, echo = TRUE}
+summary(cars)
+```
+
+## Slide with Plot
+
+```{r pressure}
+plot(pressure)
+```
+
+## Tit
+### subtiu
+```{r echo=T}
+library(dplyr)
+library(haven)
+library(readr)
+
+## Preprocesamiento
+
+# Cargar los datos
+
+# Años de nacimiento de los hijos
+nacimientos = read_sav("https://github.com/iguiIllanes/mineria-de-datos/blob/main/EDSA16_MUJER_HISTORIA_NACIMIENTOS.sav?raw=true")
+
+# Año de nacimiento de la madre
+antecedentes = read_sav("https://github.com/iguiIllanes/mineria-de-datos/blob/main/EDSA16_MUJER_ANTECEDENTES.sav?raw=true")
+
+hogar = read_sav("https://github.com/iguiIllanes/mineria-de-datos/blob/main/EDSA16_HOGAR.sav?raw=true")
+
+#vivienda
+vivienda = read_sav("https://github.com/iguiIllanes/mineria-de-datos/blob/main/EDSA16_VIVIENDA.sav?raw=true")
+
+# Seleccionar el identificador y el año de nacimiento de la madre
+antecedentes_f = antecedentes %>% select(id, nro, ms01_0109c)
+
+# Seleccionar el identificador y el año de nacimiento de los hijos
+nacimientos_h = nacimientos %>% select(id, nro, ms02_0219c)
+
+# Juntar las bases de datos
+bd_edades = antecedentes_f %>%
+  inner_join(nacimientos_h, by = c("id", "nro")) %>%
+  mutate(dif = ms02_0219c - ms01_0109c)
+
+# Seleccionar los ids de las madres que eran adolescentes cuando sus hijos nacieron
+bd_ids = bd_edades %>%
+    filter(dif <= 18 & dif >= 12) %>% 
+    group_by(across(all_of(c("id", "nro")))) %>%
+    summarise(min_dif = min(dif)) %>%
+    distinct(id, nro, min_dif)
+
+# Calcular la cantidad de hijos por madre adolescente
+bd_tot = bd_ids %>%
+    inner_join(nacimientos_h, by = c("id", "nro")) %>%
+    group_by(across(all_of(c("id", "nro")))) %>%
+    mutate(cantidadHijos = n()) %>%
+    select(id, nro, min_dif, cantidadHijos)
+
+# Variables de interes
+antecedentes_e = antecedentes %>% select(id, nro, ms01_0112_1, ms01_0120_1, ms02_0271, ms02_0282, ms06_0610_1, ms06_0614)
+
+# conocimiento sobre metodos anticonceptivos
+con_mac = antecedentes[c(1,2,208:220)]
+
+# uso de metodos anticonceptivos
+uso_mac = antecedentes[c(1,2,224:236)]
+uso_mac = uso_mac %>%
+  mutate(ms03_0302_01 = replace(ms03_0302_01, is.na(ms03_0302_01), 2)) %>%
+  mutate(ms03_0302_02 = replace(ms03_0302_02, is.na(ms03_0302_02), 2)) %>%
+  mutate(ms03_0302_03 = replace(ms03_0302_03, is.na(ms03_0302_03), 2)) %>%
+  mutate(ms03_0302_04 = replace(ms03_0302_04, is.na(ms03_0302_04), 2)) %>%
+  mutate(ms03_0302_05 = replace(ms03_0302_05, is.na(ms03_0302_05), 2)) %>%
+  mutate(ms03_0302_06 = replace(ms03_0302_06, is.na(ms03_0302_06), 2)) %>%
+  mutate(ms03_0302_07 = replace(ms03_0302_07, is.na(ms03_0302_07), 2)) %>%
+  mutate(ms03_0302_08 = replace(ms03_0302_08, is.na(ms03_0302_08), 2)) %>%
+  mutate(ms03_0302_09 = replace(ms03_0302_09, is.na(ms03_0302_09), 2)) %>%
+  mutate(ms03_0302_10 = replace(ms03_0302_10, is.na(ms03_0302_10), 2)) %>%
+  mutate(ms03_0302_11 = replace(ms03_0302_11, is.na(ms03_0302_11), 2)) %>%
+  mutate(ms03_0302_12 = replace(ms03_0302_12, is.na(ms03_0302_12), 2)) %>%
+  mutate(ms03_0302_13 = replace(ms03_0302_13, is.na(ms03_0302_13), 2))
+
+# si la persona sabe leer y escribir
+hog_24 = hogar %>% select(id, nro, hs04_b_0024)
+
+# caracteristicas de la vivienda
+viv = vivienda %>% select(id, dv_0049_1, dv_0050, dv_0051, dv_0052, dv_0053, dv_0055, dv_0060)
+
+# casada o vive en union con un hombre
+casada = antecedentes %>% select(id, nro, ms06_0601)
+
+# acerca de las relaciones sexuales
+rel = antecedentes %>% select(id, nro, ms06_0615_a, ms06_0615_b, ms06_0616, ms06_0618) %>% 
+  mutate(ms06_0615_a = replace(ms06_0615_a, is.na(ms06_0615_a), 2)) %>%
+  mutate(ms06_0615_b = replace(ms06_0615_b, is.na(ms06_0615_b), 2)) %>%
+  mutate(ms06_0618 = replace(ms06_0618, is.na(ms06_0618), 8))
+
+# problemas en el tratamiento medico 1006 A, B, C, F
+trat_med = antecedentes %>% select(id, nro, ms10_1006_a, ms10_1006_b, ms10_1006_c, ms10_1006_f)
+
+# consumo de bebidas alcoholicas 1012
+alc = antecedentes %>% select(id, nro, ms10_1012)
+
+# consumo de tabaco 1015
+tab = antecedentes %>% select(id, nro, ms10_1015)
+
+# Cambiar los valores nulos en el nivel de educación
+preguntas = antecedentes_e %>%
+  mutate(ms01_0112_1 = replace(ms01_0112_1, is.na(ms01_0112_1), 0))
+
+# Si la persona responde con que no se acuerda o no sabe la edad 
+# en la que tuvo relaciones sexuales, se asume que es la edad
+# en la que tuvo su primer hijo.
+bd_r = bd_tot %>% inner_join(preguntas, by = c("id", "nro")) %>%
+  mutate(ms06_0610_1 = replace(ms06_0610_1, is.na(ms06_0610_1), min_dif)) %>%
+  mutate(ms06_0614 = replace(ms06_0614, (is.na(ms06_0614) | ms06_0614 == 98), 1)) %>%
+  ungroup(id, nro) %>%
+  distinct()
+
+# agregando las preguntas sobre conocimiento de metodos anticonceptivos
+bd_r = bd_r %>% inner_join(con_mac, by = c("id", "nro"))
+
+# agregando las preguntas sobre uso de metodos anticonceptivos
+bd_r = bd_r %>% inner_join(uso_mac, by = c("id", "nro"))
+
+# agregando la pregunta de leer y escribir
+bd_r = bd_r %>% inner_join(hog_24, by = c("id", "nro"))
+
+# agregando las caracteristicas de la vivienda
+bd_r = bd_r %>% inner_join(viv, by="id")
+
+# agregando la pregunta si esta casada
+bd_r = bd_r %>% inner_join(casada, by=c("id", "nro"))
+
+# agregando las preguntas sobre relaciones sexuales
+bd_r = bd_r %>% inner_join(rel, by = c("id", "nro"))
+
+# agregando las preguntas sobre tratamiento medico
+bd_r = bd_r %>% inner_join(trat_med, by = c("id", "nro"))
+
+# agregando la pregunta sobre el alcohol
+bd_r = bd_r %>% inner_join(alc, by = c("id", "nro"))
+
+# agregando la pregunta sobre el consumo de tabaco
+bd_r = bd_r %>% inner_join(tab, by = c("id", "nro"))
+```
+
+
+```{r}
+lr1 = lm(cantidadHijos ~ as.factor(ms01_0112_1) + as.factor(ms01_0120_1)
+         + as.factor(ms02_0271) + as.factor(ms02_0282)
+         + as.factor(hs04_b_0024) + as.factor(dv_0049_1)
+         + as.factor(dv_0050) + as.factor(dv_0051)
+         + as.factor(dv_0052) + as.factor(dv_0053)
+         + as.factor(dv_0055) + as.factor(dv_0060)
+         + as.factor(ms03_0301_01) + as.factor(ms03_0301_02)
+         + as.factor(ms03_0301_03) + as.factor(ms03_0301_04)
+         + as.factor(ms03_0301_05) + as.factor(ms03_0301_06)
+         + as.factor(ms03_0301_07) + as.factor(ms03_0301_08)
+         + as.factor(ms03_0301_09) + as.factor(ms03_0301_10)
+         + as.factor(ms03_0301_11) + as.factor(ms03_0301_12)
+         + as.factor(ms03_0301_13)
+         + as.factor(ms03_0302_01) + as.factor(ms03_0302_02)
+         + as.factor(ms03_0302_03) + as.factor(ms03_0302_04)
+         + as.factor(ms03_0302_05) + as.factor(ms03_0302_06)
+         + as.factor(ms03_0302_07) + as.factor(ms03_0302_08)
+         + as.factor(ms03_0302_09) + as.factor(ms03_0302_10)
+         + as.factor(ms03_0302_11) + as.factor(ms03_0302_12)
+         + as.factor(ms03_0302_13)
+         + as.factor(ms06_0601)
+         + as.factor(ms10_1006_a) + + as.factor(ms10_1006_b)
+         + as.factor(ms10_1006_c) + + as.factor(ms10_1006_f)
+         + as.factor(ms10_1012) + + as.factor(ms10_1015)
+         + as.factor(ms06_0615_a) + as.factor(ms06_0615_b)
+         + as.factor(ms06_0616) + as.factor(ms06_0618)
+         + ms06_0610_1 + ms06_0614, data= bd_r)
+
+summary(lr1)
+```
+
+
+```{r}
+## normalidad de los residuales
+library(nortest)
+
+# obtener los residuos
+res = residuals(lr1)
+
+ad.test(res)
+```
+```{r}
+lillie.test(res)
+```
+
+```{r}
+plot(density(res))
+```
+```{r}
+## Calcular el VIF de las variables
+library(car)
+vif_lr1 = vif(lr1)
+vif_lr1
+```
+```{r}
+# con raices cuadradas
+sqrt(vif_lr1[,1])
+```
+```{r}
+# Verificar si la varianza es constante
+library(lmtest)
+bptest(lr1)
+```
+```{r}
+## Con las distancias de Cooks
+plot(cooks.distance(lr1))
+```
+```{r}
+# Determinar el valor maximo de la distancia de cooks para omitir
+# los datos innecesarios.
+qq = quantile(cooks.distance(lr1), c(0.85), na.rm=T)
+qq[[1]]
+```
+
+
+```{r}
+bd_filtrada = bd_r %>% filter(cooks.distance(lr1) <= qq[[1]])
+# Regresión lineal
+lr2 = lm(cantidadHijos ~ as.factor(ms01_0112_1) + as.factor(ms01_0120_1)
+         + as.factor(ms02_0271) + as.factor(ms02_0282)
+         + as.factor(hs04_b_0024) + as.factor(dv_0049_1)
+         + as.factor(dv_0050) + as.factor(dv_0051)
+         + as.factor(dv_0052) + as.factor(dv_0053)
+         + as.factor(dv_0055) + as.factor(dv_0060)
+         + as.factor(ms03_0301_01) + as.factor(ms03_0301_02)
+         + as.factor(ms03_0301_03) + as.factor(ms03_0301_04)
+         + as.factor(ms03_0301_05) + as.factor(ms03_0301_06)
+         + as.factor(ms03_0301_07) + as.factor(ms03_0301_08)
+         + as.factor(ms03_0301_09) + as.factor(ms03_0301_10)
+         + as.factor(ms03_0301_11) + as.factor(ms03_0301_12)
+         + as.factor(ms03_0301_13)
+         + as.factor(ms03_0302_01) + as.factor(ms03_0302_02)
+         + as.factor(ms03_0302_03) + as.factor(ms03_0302_04)
+         + as.factor(ms03_0302_05) + as.factor(ms03_0302_06)
+         + as.factor(ms03_0302_07) + as.factor(ms03_0302_08)
+         + as.factor(ms03_0302_09) + as.factor(ms03_0302_10)
+         + as.factor(ms03_0302_11) + as.factor(ms03_0302_12)
+         + as.factor(ms03_0302_13)
+         + as.factor(ms06_0601)
+         + as.factor(ms10_1006_a) + + as.factor(ms10_1006_b)
+         + as.factor(ms10_1006_c) + + as.factor(ms10_1006_f)
+         + as.factor(ms10_1012) + + as.factor(ms10_1015)
+         + as.factor(ms06_0615_a) + as.factor(ms06_0615_b)
+         + as.factor(ms06_0616) + as.factor(ms06_0618)
+         + ms06_0610_1 + ms06_0614, data= bd_filtrada)
+
+summary(lr2)
+```
+```{r}
+res2 = residuals(lr2)
+plot(density(res2))
+```
+
+```{r}
+ad.test(res2)
+```
+
+```{r}
+lillie.test(res)
+```
+
+```{r}
+vif_lr2 = vif(lr2)
+vif_lr2
+```
+
+```{r}
+sqrt(vif_lr1[,1])
+```
+
+```{r}
+bptest(lr2)
+```
